@@ -1,7 +1,7 @@
 etc/
 target/
 work/
-.settings
-.project
-.classpath
+.*
+!.gitignore
+*.iml
 *~
