@@ -328,9 +328,13 @@ public class BeakerBuilder extends Builder {
             if (beakerClient != null) return;
             if (beakerURL != null && !"".equals(beakerURL.trim())) {
                 beakerClient = BeakerServer.getXmlRpcClient(beakerURL);
-                //beakerClient.authenticate(login, password);
-                identity = new Identity(login, password, beakerClient);
-                identity.authenticate(); // TODO can probably be avoided as we do not guarantee identity to be authenticated anyway
+
+                try {
+                    identity = beakerClient.authenticate(new Identity(login, password));
+                } catch (XmlRpcException e) {
+                    beakerClient = null;
+                    LOGGER.log(Level.WARNING, "Unable to create beaker client", e);
+                }
             }
         }
 
@@ -338,18 +342,19 @@ public class BeakerBuilder extends Builder {
          * Tries to connect to Beaker server and verify that provided credential works.
          */
         @Restricted(DoNotUse.class)
-        public FormValidation doTestConnection(@QueryParameter("beakerURL") final String beakerURL,
-                @QueryParameter("login") final String login, @QueryParameter("password") final String password) {
+        public FormValidation doTestConnection(
+                @QueryParameter("beakerURL") final String beakerURL,
+                @QueryParameter("login") final String login,
+                @QueryParameter("password") final String password
+        ) {
             LOGGER.fine("Trying to get client for " + beakerURL);
             BeakerClient bc = BeakerServer.getXmlRpcClient(beakerURL);
-            Identity ident = new Identity(login, password, bc);
             try {
-                if (!ident.authenticate())
-                    // TODO localization
-                    return FormValidation.error("Cannot connect to " + beakerURL + " as " + login);
+                Identity ident = bc.authenticate(new Identity(login, password));
+
                 return FormValidation.ok("Connected as " + ident.whoAmI());
             } catch (Exception e) {
-                return FormValidation.error(e, "Somethign went wrong, cannot connect to " + beakerURL);
+                return FormValidation.error(e, "Cannot connect to " + beakerURL);
             }
         }
 
