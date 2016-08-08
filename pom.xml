@@ -15,13 +15,13 @@
 
     <developers>
         <developer>
-            <id>vjuranek</id>
-            <name>Vojtech Juranek</name>
+            <id>ogondza</id>
+            <name>Oliver Gondža</name>
         </developer>
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/jenkinsci/${project.artifctId}-plugin.git</connection>
+        <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
         <url>http://github.com/jenkinsci/${project.artifactId}-plugin</url>
         <tag>HEAD</tag>
@@ -31,6 +31,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-hpi-plugin.version>1.95</maven-hpi-plugin.version><!-- explicitly specifying the latest version here because one we get from the parent POM tends to lag behind a bit -->
         <version.beaker4j>1.0.3</version.beaker4j>
+        <surefire.useFile>false</surefire.useFile>
     </properties>
 
     <dependencies>
@@ -39,6 +40,7 @@
             <artifactId>beaker4j</artifactId>
             <version>${version.beaker4j}</version>
         </dependency>
+
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
@@ -53,7 +55,6 @@
         </dependency>
     </dependencies>
 
-    <!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->
     <repositories>
         <repository>
             <id>repo.jenkins-ci.org</id>
@@ -67,5 +68,4 @@
             <url>http://repo.jenkins-ci.org/public/</url>
         </pluginRepository>
     </pluginRepositories>
-
 </project>
