@@ -26,6 +26,10 @@ package org.jenkinsci.plugins.beakerbuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import hudson.ExtensionList;
 import hudson.model.FreeStyleBuild;
 import hudson.model.Result;
@@ -33,10 +37,13 @@ import hudson.model.Descriptor;
 import hudson.model.FreeStyleProject;
 
 import org.jenkinsci.plugins.beakerbuilder.BeakerBuilder.DescriptorImpl;
+import org.jenkinsci.plugins.beakerbuilder.utils.ConsoleLogger;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.SingleFileSCM;
+import org.jvnet.hudson.test.WithoutJenkins;
+import org.jvnet.hudson.test.recipes.WithTimeout;
 import org.mockito.Mockito;
 
 import com.github.vjuranek.beaker4j.client.BeakerClient;
@@ -46,6 +53,8 @@ import com.github.vjuranek.beaker4j.remote_model.BeakerTask.TaskInfo;
 import com.github.vjuranek.beaker4j.remote_model.Identity;
 import com.github.vjuranek.beaker4j.remote_model.TaskResult;
 import com.github.vjuranek.beaker4j.remote_model.TaskStatus;
+
+import java.util.HashMap;
 
 public class BuildTest {
 
@@ -140,20 +149,37 @@ public class BuildTest {
         assertThat(build.getLog(), containsString("No such file or directory"));
     }
 
+    @Test(timeout = 5000) @WithoutJenkins
+    public void pollingThreadThrown() throws Exception {
+        BeakerTask bt = mock(BeakerTask.class);
+        when(bt.getInfo())
+                .thenThrow(new Error())
+                .thenReturn(TaskWatchdogTest.getDummyTaskInfo())
+        ;
+
+        BeakerJob bj = mock(BeakerJob.class);
+        when(bj.getJobId()).thenReturn("42");
+        when(bj.getBeakerTask()).thenReturn(bt);
+
+        ConsoleLogger cl = mock(ConsoleLogger.class);
+        boolean ret = BeakerBuilder.waitForJobCompletion(bj, cl);
+        assertTrue(ret);
+    }
+
     private void mockBeakerExecution(String xml, int number, TaskStatus status, TaskResult result) throws Exception {
-        BeakerJob job = Mockito.mock(BeakerJob.class);
-        Mockito.when(client.scheduleJob(xml)).thenReturn(job);
-        Mockito.when(job.getJobId()).thenReturn("J:" + number);
-        Mockito.when(job.getJobNumber()).thenReturn(number);
+        BeakerJob job = mock(BeakerJob.class);
+        when(client.scheduleJob(xml)).thenReturn(job);
+        when(job.getJobId()).thenReturn("J:" + number);
+        when(job.getJobNumber()).thenReturn(number);
 
-        BeakerTask task = Mockito.mock(BeakerTask.class);
-        Mockito.when(job.getBeakerTask()).thenReturn(task);
+        BeakerTask task = mock(BeakerTask.class);
+        when(job.getBeakerTask()).thenReturn(task);
 
-        TaskInfo info = Mockito.mock(TaskInfo.class);
-        Mockito.when(task.getInfo()).thenReturn(info);
-        Mockito.when(info.isFinished()).thenReturn(true);
-        Mockito.when(info.getState()).thenReturn(status);
-        Mockito.when(info.getResult()).thenReturn(result);
+        TaskInfo info = mock(TaskInfo.class);
+        when(task.getInfo()).thenReturn(info);
+        when(info.isFinished()).thenReturn(true);
+        when(info.getState()).thenReturn(status);
+        when(info.getResult()).thenReturn(result);
     }
 
     private void mockBeakerConnection() {
@@ -165,10 +191,10 @@ public class BuildTest {
         DescriptorImpl spy = Mockito.spy(desc);
         descriptors.add(spy);
 
-        identity = Mockito.mock(Identity.class);
-        client = Mockito.mock(BeakerClient.class);
+        identity = mock(Identity.class);
+        client = mock(BeakerClient.class);
 
-        Mockito.when(spy.getIdentity()).thenReturn(identity);
-        Mockito.when(spy.getBeakerClient()).thenReturn(client);
+        when(spy.getIdentity()).thenReturn(identity);
+        when(spy.getBeakerClient()).thenReturn(client);
     }
 }

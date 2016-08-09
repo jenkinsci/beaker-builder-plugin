@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>1.509.1</version>
+        <version>1.609</version>
     </parent>
 
     <groupId>org.jenkins-ci.plugins</groupId>
@@ -30,7 +30,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-hpi-plugin.version>1.95</maven-hpi-plugin.version><!-- explicitly specifying the latest version here because one we get from the parent POM tends to lag behind a bit -->
-        <version.beaker4j>1.0.4-SNAPSHOT</version.beaker4j>
+        <version.beaker4j>1.0.6</version.beaker4j>
         <surefire.useFile>false</surefire.useFile>
     </properties>
 

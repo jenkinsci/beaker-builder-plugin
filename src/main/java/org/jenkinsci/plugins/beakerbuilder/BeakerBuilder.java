@@ -94,7 +94,7 @@ public class BeakerBuilder extends Builder {
         // job exists in Beaker, we can create an action pointing to it
         BeakerBuildAction bba = new BeakerBuildAction(job.getJobNumber(), getDescriptor().getBeakerURL());
         build.addAction(bba);
-        log(console, "[Beaker] INFO: Job successfuly submitted to Beaker, job ID is " + job.getJobId());
+        log(console, "[Beaker] INFO: Job successfully submitted to Beaker, job ID is " + job.getJobId());
 
         // wait for job completion
         if (!waitForJobCompletion(job, console))
@@ -129,10 +129,11 @@ public class BeakerBuilder extends Builder {
             }
 
             //client credentials can expire after some time, renew them before scheduling of each build
-            identity.authenticate();
+            client.authenticate(identity);
             job = client.scheduleJob(jobXml);
         } catch(XmlRpcException e) {
             log(console, "[Beaker] ERROR: Job scheduling has failed, reason: " + e.getMessage());
+            LOGGER.log(Level.WARNING, "Beaker job scheduling has failed", e);
         }
         return job;
     }
@@ -143,9 +144,9 @@ public class BeakerBuilder extends Builder {
      *
      * @return True if waiting for job finishes normally.
      */
-    private boolean waitForJobCompletion(BeakerJob job, ConsoleLogger console) {
+    /*package*/ static boolean waitForJobCompletion(BeakerJob job, ConsoleLogger console) {
         TaskWatchdog watchdog = new TaskWatchdog(job.getBeakerTask(), TaskStatus.NEW);
-        Timer timer = new Timer();
+        Timer timer = new Timer("Waiting for beaker job " + job.getJobId());
         timer.scheduleAtFixedRate(watchdog, TaskWatchdog.DEFAULT_DELAY, TaskWatchdog.DEFAULT_PERIOD);
         synchronized (watchdog) {
             while (!watchdog.isFinished()) {
@@ -248,7 +249,7 @@ public class BeakerBuilder extends Builder {
      * @param message
      *            Message to be logges
      */
-    private void log(ConsoleLogger console, String message) {
+    private static void log(ConsoleLogger console, String message) {
         console.logAnnot(message);
     }
 

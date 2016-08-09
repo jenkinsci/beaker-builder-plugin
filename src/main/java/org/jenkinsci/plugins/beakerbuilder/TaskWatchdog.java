@@ -1,6 +1,8 @@
 package org.jenkinsci.plugins.beakerbuilder;
 
 import java.util.TimerTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.xmlrpc.XmlRpcException;
 
@@ -8,14 +10,17 @@ import com.github.vjuranek.beaker4j.remote_model.BeakerTask;
 import com.github.vjuranek.beaker4j.remote_model.BeakerTask.TaskInfo;
 import com.github.vjuranek.beaker4j.remote_model.TaskStatus;
 
+import javax.annotation.CheckForNull;
+
 /**
  * {@link TimerTask} which which wait some time and then checks the task status periodically. It keeps information about
  * previous task status so that it can notify the caller that task status has changed.
  * 
  * @author vjuranek
- * 
  */
 public class TaskWatchdog extends TimerTask {
+
+    private static final Logger LOGGER = Logger.getLogger(TaskWatchdog.class.getName());
 
     /**
      * Default delay before watchdog starts to monitor status task. It's here for convenience so that all callers can
@@ -66,14 +71,15 @@ public class TaskWatchdog extends TimerTask {
     public synchronized void run() {
         try {
             TaskInfo info = task.getInfo();
-            oldStatus = status;
-            status = info.getState();
+
             isFinished = info.isFinished();
-            if (oldStatus != status) {
+            if (info.getState() != status) {
+                oldStatus = status;
+                status = info.getState();
                 notifyAll();
             }
-        } catch (XmlRpcException e) {
-
+        } catch (Throwable ex) {
+            LOGGER.log(Level.WARNING, "Unable to get task info", ex);
         }
     }
 
@@ -100,5 +106,4 @@ public class TaskWatchdog extends TimerTask {
     public boolean isFinished() {
         return isFinished;
     }
-
 }
