@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<org.jenkinsci.plugins.beakerbuilder.BeakerBuilder_-DescriptorImpl>
+  <beakerURL>URL</beakerURL>
+  <login>USERNAME</login>
+  <password>PASSWD</password>
+</org.jenkinsci.plugins.beakerbuilder.BeakerBuilder_-DescriptorImpl>

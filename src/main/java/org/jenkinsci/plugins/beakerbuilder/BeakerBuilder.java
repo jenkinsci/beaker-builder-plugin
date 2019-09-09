@@ -1,8 +1,10 @@
 package org.jenkinsci.plugins.beakerbuilder;
 
+import com.google.common.annotations.VisibleForTesting;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.XmlFile;
 import hudson.model.BuildListener;
 import hudson.model.Result;
 import hudson.model.AbstractBuild;
@@ -12,6 +14,7 @@ import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 
 import java.io.IOException;
+import java.io.ObjectStreamException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Map;
@@ -20,7 +23,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 
+import hudson.util.Secret;
 import net.sf.json.JSONObject;
 
 import org.apache.xmlrpc.XmlRpcException;
@@ -266,7 +271,6 @@ public class BeakerBuilder extends Builder {
          */
         private String beakerURL;
 
-        // TODO provide a way to store the credential in Jenkins authentication center.
         /**
          * Beaker login
          */
@@ -275,13 +279,23 @@ public class BeakerBuilder extends Builder {
         /**
          * Beaker password
          */
-        private String password;
+        private @Nonnull Secret secret;
+        @Deprecated private String password;
 
         private transient BeakerClient beakerClient;
         private transient Identity identity;
 
         public DescriptorImpl() {
             load();
+        }
+
+        private Object readResolve() {
+            if (password != null) {
+                secret = Secret.fromString(password);
+                password = null;
+                save();
+            }
+            return this;
         }
 
         @Override
@@ -318,8 +332,8 @@ public class BeakerBuilder extends Builder {
         }
 
         @Restricted(DoNotUse.class) // Databinding
-        public void setPassword(String password) {
-            this.password = password;
+        public void setPassword(Secret secret) {
+            this.secret = secret;
         }
 
         /**
@@ -331,7 +345,7 @@ public class BeakerBuilder extends Builder {
                 beakerClient = BeakerServer.getXmlRpcClient(beakerURL);
 
                 try {
-                    identity = beakerClient.authenticate(new Identity(login, password));
+                    identity = beakerClient.authenticate(new Identity(login, secret.getPlainText()));
                 } catch (XmlRpcException e) {
                     beakerClient = null;
                     LOGGER.log(Level.WARNING, "Unable to create beaker client", e);
@@ -346,12 +360,12 @@ public class BeakerBuilder extends Builder {
         public FormValidation doTestConnection(
                 @QueryParameter("beakerURL") final String beakerURL,
                 @QueryParameter("login") final String login,
-                @QueryParameter("password") final String password
+                @QueryParameter("password") final Secret password
         ) {
             LOGGER.fine("Trying to get client for " + beakerURL);
             BeakerClient bc = BeakerServer.getXmlRpcClient(beakerURL);
             try {
-                Identity ident = bc.authenticate(new Identity(login, password));
+                Identity ident = bc.authenticate(new Identity(login, password.getPlainText()));
 
                 return FormValidation.ok("Connected as " + ident.whoAmI());
             } catch (Exception e) {
@@ -367,8 +381,8 @@ public class BeakerBuilder extends Builder {
             return login;
         }
 
-        public String getPassword() {
-            return password;
+        public Secret getPassword() {
+            return secret;
         }
 
         /**
@@ -390,6 +404,12 @@ public class BeakerBuilder extends Builder {
         public @CheckForNull Identity getIdentity() {
             setupClient();
             return identity;
+        }
+
+        @Override
+        @VisibleForTesting
+        protected XmlFile getConfigFile() {
+            return super.getConfigFile();
         }
     }
 

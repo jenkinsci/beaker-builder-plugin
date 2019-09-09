@@ -32,11 +32,15 @@ import hudson.model.FreeStyleProject;
 import org.jenkinsci.plugins.beakerbuilder.BeakerBuilder.DescriptorImpl;
 import org.junit.Rule;
 import org.junit.Test;
+import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.JenkinsRule.WebClient;
 
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import org.jvnet.hudson.test.recipes.LocalData;
+
+import java.io.IOException;
 
 public class ConfigRoundtripTest {
 
@@ -77,6 +81,20 @@ public class ConfigRoundtripTest {
 
         assertEquals("URL", descriptor.getBeakerURL());
         assertEquals("USERNAME", descriptor.getLogin());
-        assertEquals("PASSWD", descriptor.getPassword());
+        assertEquals("PASSWD", descriptor.getPassword().getPlainText());
+    }
+
+    @Test
+    @LocalData
+    @Issue("SECURITY-1545")
+    public void migratePasswordToSecret() throws IOException {
+        DescriptorImpl descriptor = (DescriptorImpl) j.jenkins.getDescriptorOrDie(BeakerBuilder.class);
+
+        assertEquals("URL", descriptor.getBeakerURL());
+        assertEquals("USERNAME", descriptor.getLogin());
+        assertEquals("PASSWD", descriptor.getPassword().getPlainText());
+
+        String text = descriptor.getConfigFile().asString();
+        assertFalse(text, text.contains("PASSWD"));
     }
 }
